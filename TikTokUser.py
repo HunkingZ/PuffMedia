@@ -3,7 +3,7 @@ import asyncio
 import os
 import xlsxwriter
 
-workbook = xlsxwriter.Workbook('Example1.xlsx')
+workbook = xlsxwriter.Workbook('Creator_Info.xlsx')
 worksheet = workbook.add_worksheet()
 
 ms_token = os.environ.get(
@@ -17,9 +17,11 @@ context_options = {
 async def trending_videos():
     async with TikTokApi() as api:
         await api.create_sessions(ms_tokens=[ms_token], num_sessions=1, sleep_after=3, context_options=context_options)
+
+        # Change the tag name for different type of videos
         tag = api.hashtag(name="toy")
         row = 0
-        async for video in tag.videos(count=30):
+        async for video in tag.videos(count=1000):
             # print(video)
             # print(video.as_dict)
             user_name = video.author.username
