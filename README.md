@@ -18,3 +18,9 @@
  ```
  pip install --upgrade TikTokApi
  ```
+
+
+ Example:
+ ```
+ python .\TikTokUser.py
+ ```
