@@ -1,3 +1,5 @@
+import re
+
 from TikTokApi import TikTokApi
 import asyncio
 import os
@@ -21,25 +23,67 @@ async def trending_videos():
         # Change the tag name for different type of videos
         tag = api.hashtag(name="toy")
         row = 0
-        async for video in tag.videos(count=1000):
-            # print(video)
+        async for video in tag.videos(count=30):
+
+            # print("DICT HERE: ")
+            # #print(video)
             # print(video.as_dict)
+            # print("DICT END")
             user_name = video.author.username
             print(user_name)
             user = api.user(user_name)
             user_data = await user.info()
             user_info = user_data["userInfo"]
+            # print(user_data)
             follower_count = user_info["stats"]["followerCount"]
             signature = user_info["user"]["signature"]
             worksheet.write(row, 0, user_name)
             worksheet.write(row, 1, follower_count)
             worksheet.write(row, 2, signature)
+            signature = modify_email(signature)
+            worksheet.write(row, 3, signature)
             print(follower_count)
-            print("Signature: " + signature)
+            # print("Signature: " + signature)
             print()
             row += 1
 
     workbook.close()
+
+
+def modify_email(signature):
+    email_pattern = r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})'
+
+    found_emails = re.findall(email_pattern, signature)
+    signature = found_emails[0] if found_emails else None
+
+    valid_formats = ['.com', '.co', '.net', '.org']
+    if isinstance(signature, str):
+        if '@yahoo' in signature:
+            if not signature.endswith('.com'):
+                signature = signature.split('@yahoo')[0] + '@yahoo.com'
+
+        if '@hotmail' in signature:
+            if not signature.endswith('.com'):
+                signature = signature.split('@hotmail')[0] + '@hotmail.com'
+
+        if '@icloud' in signature:
+            if not signature.endswith('.com'):
+                signature = signature.split('@icloud')[0] + '@icloud.com'
+
+        if '@gmail' in signature:
+            if not signature.endswith('.com'):
+                signature = signature.split('@gmail')[0] + '@gmail.com'
+
+        if not any(format in signature for format in valid_formats):
+            signature = None
+        if signature.startswith('Collab'):
+            signature = None
+        if signature.startswith(('Business')):
+            signature = None
+
+        return signature
+
+
 
 if __name__ == "__main__":
     asyncio.run(trending_videos())
