@@ -7,6 +7,7 @@ import xlsxwriter
 
 workbook = xlsxwriter.Workbook('Creator_Info.xlsx')
 worksheet = workbook.add_worksheet()
+handleList = []
 
 ms_token = os.environ.get(
     "ms_token", None
@@ -23,13 +24,16 @@ async def trending_videos():
         # Change the tag name for different type of videos
         tag = api.hashtag(name="toy")
         row = 0
-        async for video in tag.videos(count=30):
+        async for video in tag.videos(count=999999):
 
             # print("DICT HERE: ")
             # #print(video)
             # print(video.as_dict)
             # print("DICT END")
             user_name = video.author.username
+            if user_name in handleList:
+                continue
+            handleList.append(user_name)
             print(user_name)
             user = api.user(user_name)
             user_data = await user.info()
@@ -76,10 +80,12 @@ def modify_email(signature):
 
         if not any(format in signature for format in valid_formats):
             signature = None
-        if signature.startswith('Collab'):
-            signature = None
-        if signature.startswith(('Business')):
-            signature = None
+
+        if signature is not None:
+            if signature.startswith('Collab'):
+                signature = None
+            if signature.startswith(('Business')):
+                signature = None
 
         return signature
 
