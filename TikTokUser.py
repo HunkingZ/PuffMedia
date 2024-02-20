@@ -4,6 +4,7 @@ from TikTokApi import TikTokApi
 import asyncio
 import os
 import xlsxwriter
+import openpyxl
 
 workbook = xlsxwriter.Workbook('Creator_Info.xlsx')
 worksheet = workbook.add_worksheet()
@@ -17,41 +18,82 @@ context_options = {
     'user_agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36'
 }
 
+
+async def get_user_info(api, handle_name):
+    # Avoid "Can not find this acc" status
+    try:
+        user = api.user(handle_name)
+        user_data = await user.info()
+        return user_data
+    except Exception as e:
+        print(f"Error retrieving user information for handle {handle_name}: {e}")
+        return None
+
+# Get Info by search their handle name
 async def trending_videos():
     async with TikTokApi() as api:
         await api.create_sessions(ms_tokens=[ms_token], num_sessions=1, sleep_after=3, context_options=context_options)
-
-        # Change the tag name for different type of videos
-        tag = api.hashtag(name="toy")
+        dataframe = openpyxl.load_workbook("HandleList.xlsx")
+        sheet = dataframe.active
+        handle_list = [cell.value for cell in sheet['A']]
         row = 0
-        async for video in tag.videos(count=999999):
 
-            # print("DICT HERE: ")
-            # #print(video)
-            # print(video.as_dict)
-            # print("DICT END")
-            user_name = video.author.username
-            if user_name in handleList:
+        for name in handle_list:
+            user_data = await get_user_info(api, name)
+            if user_data is None:
+                row += 1
                 continue
-            handleList.append(user_name)
-            print(user_name)
-            user = api.user(user_name)
-            user_data = await user.info()
             user_info = user_data["userInfo"]
-            # print(user_data)
             follower_count = user_info["stats"]["followerCount"]
             signature = user_info["user"]["signature"]
-            worksheet.write(row, 0, user_name)
+            worksheet.write(row, 0, name)
             worksheet.write(row, 1, follower_count)
             worksheet.write(row, 2, signature)
             signature = modify_email(signature)
             worksheet.write(row, 3, signature)
             print(follower_count)
-            # print("Signature: " + signature)
             print()
             row += 1
 
     workbook.close()
+
+
+
+# async def trending_videos():
+#     async with TikTokApi() as api:
+#         await api.create_sessions(ms_tokens=[ms_token], num_sessions=1, sleep_after=3, context_options=context_options)
+#
+#         # Change the tag name for different type of videos
+#         tag = api.hashtag(name="universitylife")
+#         row = 0
+#         async for video in tag.videos():
+#
+#             # print("DICT HERE: ")
+#             # #print(video)
+#             # print(video.as_dict)
+#             # print("DICT END")
+#             user_name = video.author.username
+#             if user_name in handleList:
+#                 continue
+#             handleList.append(user_name)
+#             print(user_name)
+#             user = api.user(user_name)
+#             user_data = await user.info()
+#             user_info = user_data["userInfo"]
+#             # print(user_data)
+#             follower_count = user_info["stats"]["followerCount"]
+#             signature = user_info["user"]["signature"]
+#             worksheet.write(row, 0, user_name)
+#             worksheet.write(row, 1, follower_count)
+#             worksheet.write(row, 2, signature)
+#             signature = modify_email(signature)
+#             worksheet.write(row, 3, signature)
+#             print(follower_count)
+#             # print("Signature: " + signature)
+#             print()
+#             row += 1
+#
+#     workbook.close()
 
 
 def modify_email(signature):
@@ -81,11 +123,11 @@ def modify_email(signature):
         if not any(format in signature for format in valid_formats):
             signature = None
 
-        if signature is not None:
-            if signature.startswith('Collab'):
-                signature = None
-            if signature.startswith(('Business')):
-                signature = None
+        # if signature is not None:
+        #     if signature.startswith('Collab'):
+        #         signature = None
+        #     if signature.startswith(('Business')):
+        #         signature = None
 
         return signature
 
